@@ -2,159 +2,264 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows.Forms;
-
 
 namespace TimohaForms
 {
-    public class ImageViewerForm : Form1
+    public class ImageViewerForm : Form
     {
-        private PictureBox picture;
-        private Button openButton;
-        private Button colorButton;
+        private PictureBox pictureBox;
+
+        private Button previousButton;
+        private Button nextButton;
         private Button addButton;
-        private Button slideButton;
+        private Button colorButton;
+        private Button saveButton;
 
-        private Timer timer;
+        private List<string> images = new List<string>();
 
-        private string[] images;
         private int currentImage = 0;
+
 
         public ImageViewerForm()
         {
-            Text = "Piltide vaatamine";
+            Text = "Image Viewer";
             Size = new Size(900, 650);
             StartPosition = FormStartPosition.CenterScreen;
 
-            CreateControls();
+            BackColor = Color.FromArgb(25, 25, 30);
 
-            timer = new Timer();
-            timer.Interval = 3000;
-            timer.Tick += Timer_Tick;
-        }
+            pictureBox = new PictureBox();
 
-        private void CreateControls()
-        {
-            picture = new PictureBox();
-            picture.Location = new Point(20, 20);
-            picture.Size = new Size(840, 480);
-            picture.SizeMode = PictureBoxSizeMode.Zoom;
-            picture.BackColor = Color.LightGray;
+            pictureBox.Size = new Size(700, 450);
+            pictureBox.Location = new Point(100, 40);
 
-            openButton = new Button();
-            openButton.Text = "Ava";
-            openButton.Location = new Point(20, 530);
-            openButton.Size = new Size(120, 40);
-            openButton.Click += OpenButton_Click;
+            pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox.BackColor = Color.FromArgb(35, 35, 40);
 
-            colorButton = new Button();
-            colorButton.Text = "Taustavärv";
-            colorButton.Location = new Point(160, 530);
-            colorButton.Size = new Size(120, 40);
-            colorButton.Click += ColorButton_Click;
+            Controls.Add(pictureBox);
+
+
+            previousButton = new Button();
+
+            previousButton.Text = "< Eelmine";
+            previousButton.Size = new Size(140, 40);
+            previousButton.Location = new Point(150, 510);
+
+            previousButton.Click += PreviousButton_Click;
+
+            Controls.Add(previousButton);
+
+
+            nextButton = new Button();
+
+            nextButton.Text = "Järgmine >";
+            nextButton.Size = new Size(140, 40);
+            nextButton.Location = new Point(610, 510);
+
+            nextButton.Click += NextButton_Click;
+
+            Controls.Add(nextButton);
 
             addButton = new Button();
+
             addButton.Text = "Lisa";
-            addButton.Location = new Point(300, 530);
             addButton.Size = new Size(120, 40);
+            addButton.Location = new Point(310, 510);
+
             addButton.Click += AddButton_Click;
 
-            slideButton = new Button();
-            slideButton.Text = "Slaidiesitlus";
-            slideButton.Location = new Point(440, 530);
-            slideButton.Size = new Size(120, 40);
-            slideButton.Click += SlideButton_Click;
-
-            Controls.Add(picture);
-            Controls.Add(openButton);
-            Controls.Add(colorButton);
             Controls.Add(addButton);
-            Controls.Add(slideButton);
+
+
+            colorButton = new Button();
+
+            colorButton.Text = "Taustavärv";
+            colorButton.Size = new Size(120, 40);
+            colorButton.Location = new Point(440, 510);
+
+            colorButton.Click += ColorButton_Click;
+
+            Controls.Add(colorButton);
+
+
+            saveButton = new Button();
+
+            saveButton.Text = "Salvesta";
+            saveButton.Size = new Size(120, 40);
+            saveButton.Location = new Point(390, 560);
+
+            saveButton.Click += SaveButton_Click;
+
+            Controls.Add(saveButton);
+
+            LoadImages();
         }
 
-        private void OpenButton_Click(object sender, EventArgs e)
+        private void LoadImages()
         {
-            OpenFileDialog dialog = new OpenFileDialog();
+            string folder = Path.Combine(
+                Application.StartupPath,
+                "Images"
+            );
 
-            dialog.Filter = "Images|*.jpg;*.jpeg;*.png;*.bmp;*.gif";
-
-            if (dialog.ShowDialog() == DialogResult.OK)
-            {
-                picture.Image = Image.FromFile(dialog.FileName);
-            }
-        }
-
-        private void ColorButton_Click(object sender, EventArgs e)
-        {
-            ColorDialog dialog = new ColorDialog();
-
-            if (dialog.ShowDialog() == DialogResult.OK)
-            {
-                picture.BackColor = dialog.Color;
-            }
-        }
-
-        private void AddButton_Click(object sender, EventArgs e)
-        {
-            if (picture.Image == null)
-            {
-                MessageBox.Show("Kõigepealt ava pilt..");
+            if (!Directory.Exists(folder))
                 return;
+
+
+            string[] files = Directory.GetFiles(folder);
+
+            foreach (string file in files)
+            {
+                string extension =
+                    Path.GetExtension(file).ToLower();
+
+                if (extension == ".jpg" ||
+                    extension == ".jpeg" ||
+                    extension == ".png" ||
+                    extension == ".bmp")
+                {
+                    images.Add(file);
+                }
             }
 
-            SaveFileDialog dialog = new SaveFileDialog();
 
-            dialog.Filter = "PNG|*.png|JPEG|*.jpg|BMP|*.bmp";
-
-            if (dialog.ShowDialog() == DialogResult.OK)
+            if (images.Count > 0)
             {
-                ImageFormat format = ImageFormat.Png;
-
-                if (dialog.FilterIndex == 2)
-                    format = ImageFormat.Jpeg;
-
-                if (dialog.FilterIndex == 3)
-                    format = ImageFormat.Bmp;
-
-                picture.Image.Save(dialog.FileName, format);
-
-                MessageBox.Show("Pilt salvestatud.");
-            }
-        }
-
-        private void SlideButton_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog dialog = new OpenFileDialog();
-
-            dialog.Filter = "Images|*.jpg;*.jpeg;*.png;*.bmp;*.gif";
-            dialog.Multiselect = true;
-
-            if (dialog.ShowDialog() == DialogResult.OK)
-            {
-                images = dialog.FileNames;
-
                 currentImage = 0;
-
-                picture.Image = Image.FromFile(images[currentImage]);
-
-                timer.Start();
+                ShowImage();
             }
         }
 
-        private void Timer_Tick(object sender, EventArgs e)
+        private void ShowImage()
         {
-            if (images == null || images.Length == 0)
+            if (images.Count == 0)
                 return;
+
+
+            if (pictureBox.Image != null)
+            {
+                pictureBox.Image.Dispose();
+                pictureBox.Image = null;
+            }
+
+
+            pictureBox.Image =
+                Image.FromFile(images[currentImage]);
+        }
+
+        private void NextButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            if (images.Count == 0)
+                return;
+
 
             currentImage++;
 
-            if (currentImage >= images.Length)
+            if (currentImage >= images.Count)
                 currentImage = 0;
 
-            picture.Image = Image.FromFile(images[currentImage]);
+            ShowImage();
+        }
+
+
+        private void PreviousButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            if (images.Count == 0)
+                return;
+
+
+            currentImage--;
+
+            if (currentImage < 0)
+                currentImage = images.Count - 1;
+
+            ShowImage();
+        }
+
+
+        private void AddButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            OpenFileDialog dialog =
+                new OpenFileDialog();
+
+            dialog.Filter =
+                "Images|*.jpg;*.jpeg;*.png;*.bmp";
+
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                images.Add(dialog.FileName);
+
+                currentImage = images.Count - 1;
+
+                ShowImage();
+            }
+        }
+
+
+        private void ColorButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            ColorDialog dialog =
+                new ColorDialog();
+
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                BackColor = dialog.Color;
+            }
+        }
+
+        private void SaveButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            if (images.Count == 0)
+                return;
+
+
+            SaveFileDialog dialog =
+                new SaveFileDialog();
+
+            dialog.Filter =
+                "PNG Image|*.png|" +
+                "JPEG Image|*.jpg|" +
+                "Bitmap Image|*.bmp";
+
+
+            if (dialog.ShowDialog() != DialogResult.OK)
+                return;
+
+
+            ImageFormat format =
+                ImageFormat.Png;
+
+
+            string extension =
+                Path.GetExtension(
+                    dialog.FileName).ToLower();
+
+
+            if (extension == ".jpg")
+                format = ImageFormat.Jpeg;
+
+            else if (extension == ".bmp")
+                format = ImageFormat.Bmp;
+
+
+            pictureBox.Image.Save(
+                dialog.FileName,
+                format
+            );
         }
     }
 }

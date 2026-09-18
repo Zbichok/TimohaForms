@@ -110,7 +110,6 @@ namespace TimohaForms
 
             int pairs = size * size / 2;
 
-            // Создаём пары номеров
             for (int i = 1; i <= pairs; i++)
             {
                 cardNumbers.Add(i);
@@ -134,13 +133,10 @@ namespace TimohaForms
                         80 + row * cardSize
                     );
 
-                    // Номер картинки
                     card.Tag = cardNumbers[cards.Count];
 
                     card.BackgroundImageLayout = ImageLayout.Zoom;
 
-                    // Показываем вопросительный знак,
-                    // пока карточка закрыта
                     card.Text = "?";
 
                     card.Font = new Font("Arial", 20);
@@ -184,7 +180,6 @@ namespace TimohaForms
 
             int number = (int)card.Tag;
 
-            // Берём картинку из папки Images
             string fileName = Path.Combine(
                 Application.StartupPath,
                 "Images",
